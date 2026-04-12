@@ -1,0 +1,19 @@
+provider: gemini
+
+models:
+  concierge: gemini-3.1-flash-lite-preview
+  billing_specialist: gemini-2.5-flash-lite
+  tech_specialist: gemini-2.5-flash-lite
+  quality_lead: gemini-3.1-flash-lite-preview
+  summarization: gemini-3.1-flash-lite-preview
+
+token_limits:
+  max_history_turns: 10
+  tool_result_summarization_threshold: 500  # Increased since we use more efficient models
+
+escalation:
+  confidence_threshold: 0.50
+  max_specialist_retries: 2
+  max_tool_retries: 2
+
+call_delay_seconds: 0.1  # Reduced significantly to improve responsiveness

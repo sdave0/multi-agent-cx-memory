@@ -1,0 +1,37 @@
+# Environment & Secrets
+.env
+*.env.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.next/
+
+# Project Specific (Internal Traces & Logs)
+my-workspace/
+scratch/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# Editor Specific
+.vscode/
+.idea/
+*.swp
+*.swo

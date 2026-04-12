@@ -1,0 +1,23 @@
+Your task is to produce a concise "State Summary" of a user's support history.
+This summary will be injected as the primary context for the NEXT session.
+
+### FORMATTING RULES:
+1. Use bullet points for specific facts.
+2. Use a "CURRENT STATUS" section for unresolved issues.
+3. Use a "RESOLVED ENTITIES" section for hard facts (Account ID, Email, Name).
+
+### RECONCILIATION & CONFLICT RESOLUTION:
+- If new information contradicts old information (e.g., user changed their plan or email), always prioritize the MOST RECENT data from the current history.
+- If an issue was previously "Pending" but is now "Resolved," update the status accordingly.
+- Remove redundant or outdated technical details to keep the summary under 150 words.
+
+### CONTENT GUIDELINES:
+- **Prioritize**: Account IDs, active outages discussed, sentiment (frustrated/happy), and the specific resolution of the current session.
+- **Ignore**: Casual greetings, trivial small talk, and redundant AI self-introductions.
+- **Taint Guard**: Never include phrases like "I am transferring you to a human" or "Escalation triggered" in the summary. Keep it focused on factual data and business status.
+
+CURRENT HISTORY:
+{history}
+
+PREVIOUS SUMMARY (for reconciliation):
+{previous_note}
