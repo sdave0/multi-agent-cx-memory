@@ -1,0 +1,7 @@
+{
+  "route_accuracy": 0.8333333333333334,
+  "retry_rate": 0.3333333333333333,
+  "escalation_precision": 0.0,
+  "tool_error_handling": 0.0,
+  "total_passed": 5
+}

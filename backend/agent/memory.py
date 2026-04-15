@@ -10,6 +10,10 @@ from backend.logger import get_logger
 
 logger = get_logger("agent.memory")
 
+# Ensure GOOGLE_API_KEY is set if GEMINI_API_KEY is present
+if not os.environ.get("GOOGLE_API_KEY") and os.environ.get("GEMINI_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.environ.get("GEMINI_API_KEY")
+
 class MemoryManager:
     def __init__(self):
         factory = LLMClientFactory()

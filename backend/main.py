@@ -16,6 +16,15 @@ logger = get_logger("agent.main")
 
 load_dotenv(os.path.join(os.path.dirname(__file__), 'config', '.env'))
 
+# --- Startup Security Checks ---
+ENV = os.environ.get("ENV", "production")
+if ENV != "development":
+    REQUIRED_ENV = ["JWT_SECRET_KEY", "API_KEY", "REDIS_URL"]
+    missing = [env for env in REQUIRED_ENV if not os.environ.get(env)]
+    if missing:
+        logger.critical(f"CRITICAL: Missing required environment variables for {ENV} mode: {missing}")
+        raise RuntimeError(f"Missing environment variables: {missing}")
+
 # --- Auth Models & Dependencies ---
 class LoginRequest(BaseModel):
     email: str
@@ -41,8 +50,13 @@ async def get_admin_user(current_user: Account = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Not authorized")
     return current_user
 
-# Legacy API Key Security (fallback)
-API_KEY = os.environ.get("API_KEY", "nexus_dev_secret_2026")
+# Legacy API Key Security
+API_KEY = os.environ.get("API_KEY")
+if not API_KEY and ENV == "development":
+    API_KEY = "dev_api_key_only"
+elif not API_KEY:
+    raise RuntimeError("API_KEY is not set!")
+
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 

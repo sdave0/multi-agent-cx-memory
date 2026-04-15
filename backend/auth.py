@@ -6,7 +6,14 @@ import bcrypt
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "mindcx_super_secret_key_2026")
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    # We still allow a default for 'development' if specifically flagged, but otherwise fail
+    if os.environ.get("ENV") == "development":
+        SECRET_KEY = "dev_only_secret_do_not_use_in_prod"
+    else:
+        raise RuntimeError("JWT_SECRET_KEY environment variable is not set!")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 week
 

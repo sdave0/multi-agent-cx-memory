@@ -16,7 +16,14 @@ def seed_db():
         db.close()
         return
 
-    pwd_hash = get_password_hash("mindcx2026")
+    seed_password = os.environ.get("SEED_USER_PASSWORD")
+    if not seed_password:
+        if os.environ.get("ENV") == "development":
+            seed_password = "dev_password_123"
+        else:
+            raise RuntimeError("SEED_USER_PASSWORD must be set for database seeding in production!")
+            
+    pwd_hash = get_password_hash(seed_password)
 
     acct1_id = "acct_admin"
     acct2_id = "acct_customer"

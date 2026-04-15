@@ -10,6 +10,11 @@ logger = get_logger("llm.client_factory")
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', '.env'))
 
+# Ensure GOOGLE_API_KEY is set if GEMINI_API_KEY is present
+if not os.environ.get("GOOGLE_API_KEY") and os.environ.get("GEMINI_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.environ.get("GEMINI_API_KEY")
+    logger.info("Mapped GEMINI_API_KEY to GOOGLE_API_KEY.")
+
 class LLMClientFactory:
     def __init__(self):
         config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'llm_config.yaml')

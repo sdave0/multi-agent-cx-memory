@@ -161,10 +161,6 @@ export default function Login({ onLoginSuccess, isAgentPortal = false }: LoginPr
             {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Sign In'}
           </button>
         </form>
-
-        <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--on-surface-variant)' }}>
-          <p>Dev credentials: {isAgentPortal ? 'agent@mindcx.ai' : 'jonny@startup.inc'} / mindcx2026</p>
-        </div>
       </div>
     </div>
   );

@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-04-14T21:39:25.958543",
+  "metrics": {
+    "route_accuracy": 0.8333333333333334,
+    "retry_rate": 0.3333333333333333,
+    "escalation_precision": 0.0,
+    "tool_error_handling": 0.0,
+    "total_passed": 5
+  },
+  "results": [
+    {
+      "id": "billing_simple",
+      "name": "Simple Billing Inquiry",
+      "passed": false,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "billing",
+        "outcome": "escalate",
+        "retries": 2
+      },
+      "expected": {
+        "specialist": "billing_specialist",
+        "intent": "billing_inquiry",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "tech_outage",
+      "name": "Tech Outage Inquiry",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "technical",
+        "outcome": "resolved",
+        "retries": 0
+      },
+      "expected": {
+        "specialist": "tech_specialist",
+        "intent": "support",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "greeting_fast_pass",
+      "name": "Greeting Fast Pass",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "greeting",
+        "outcome": "resolved",
+        "retries": 0
+      },
+      "expected": {
+        "specialist": "tech_specialist",
+        "intent": "greeting",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "escalation_manual",
+      "name": "Manual Escalation Request",
+      "passed": true,
+      "actual": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate",
+        "retries": 0
+      },
+      "expected": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate"
+      }
+    },
+    {
+      "id": "billing_free_tier",
+      "name": "Billing History - Free Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "billing",
+        "outcome": "resolved",
+        "retries": 0
+      },
+      "expected": {
+        "specialist": "billing_specialist",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "tech_bug_pro",
+      "name": "Bug Report - Pro Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "technical",
+        "outcome": "resolved",
+        "retries": 0
+      },
+      "expected": {
+        "specialist": "tech_specialist",
+        "outcome": "resolved"
+      }
+    }
+  ]
+}

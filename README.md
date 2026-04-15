@@ -2,24 +2,56 @@
 
 The most frustrating part of customer support is having to explain your problem all over again.
 
-MindCX is a multi-agent support system that actually remembers its users. It uses three layers of memory to keep track of past conversations, user preferences, and previous fixes. 
+MindCX is a multi-agent support system that actually remembers its users. It uses three layers of memory across the current conversation, the current session, and the full user history. 
 
 ---
 
 ## The Problem It Solves
 
-Even in the era of autonomous agents, most support systems struggle to survive real-world production. They suffer from three specific architectural flaws:
+Most support systems struggle to survive real-world production. Three problems come up repeatedly:
 
 * **Context Rot:** 
-Without tiered memory, agents either forget the past or bloat their context window with irrelevant history. This "noise" degrades reasoning, forcing users to re-explain their problems every time they return.
+Without tiered memory, agents either forget past conversations or stuff the context window with irrelevant history, which degrades response quality and forces users to re-explain themselves on every return visit.
 
 * **Unchecked Autonomy:** 
-Single-agent systems often experience silent drift. Without a supervisor node to audit decisions, an agent may confidently execute incorrect technical steps or trigger unauthorized billing actions.
+Single-agent systems have no internal check on their own output. Without a supervisor, an agent can confidently execute the wrong fix or trigger billing actions it shouldn't.
 
 * **The Persistence Gap:** 
-Most frameworks handle the "current turn" well but fail to recall user-specific facts across different sessions. This lack of long-term episodic memory leads to a fragmented and impersonal customer experience.
+Most frameworks handle the "current turn" well but fail to recall user-specific facts across different sessions. The result is a support experience that feels like starting from scratch every time.
 
-MindCX replaces the single all-purpose agent with a coordinated team of specialists governed by a Quality Lead. This ensures every decision is grounded in persistent, verified context that spans days, not just minutes.
+The real engineering is in the memory layer. Turn context, session summaries, and long-term vector memory run in parallel so the system never loses track of a user across conversations.
+
+---
+
+## How It Works
+
+**Three-Tier Memory Architecture:**
+* **The Conversation (Short-Term)**
+It keeps the agents focused on the current conversation thread so they don't lose their place between messages.
+* **The Session (Mid-Term)**
+If a user leaves and returns an hour later, the system uses a Redis-backed summary to pick up exactly where they left off without needing a full recap.
+* **The History (Long-Term)**
+Using Vector Search, the system remembers past issues and preferences from weeks or months ago. If a user says, "It’s happening again," the agents can recall exactly how it was fixed last time.
+
+**Self-Correcting Quality Loop:** 
+Every specialist response must pass a "Quality Lead" supervisor node before reaching the user. If the response hallucinates or misses the user's actual question, the Quality Lead issues a `RETRY` and the graph loops back. A hard cap of 2 retries prevents runaway token burn.
+
+**Taint-and-Suppress Context Isolation:**
+If an AI session fails and escalates to a human, we "taint" the cross-session state note with an `[ESCALATED]` prefix. On the user's next visit, the system detects this prefix and suppresses the context, preventing a degraded or confusing previous session from poisoning the new LLM context window.
+
+**Two-Layer Caching:**
+During a retry loop, tool calls would otherwise re-execute and burn tokens on data already fetched. Caching results in both GraphState (turn-local) and Redis SessionData (cross-turn) prevents that.
+
+**Performance & Cost Optimization**
+* **Regex Fast-Pass:** Simple inputs like greetings are caught by a regex check before hitting the LLM. This bypasses the LLM entirely, saving a round-trip on approximately 40% of message exchanges.
+* **Token Budgeting:** Large tool payloads, such as extensive billing histories, pass through a budget filter. If a payload is too large, it gets trimmed before reaching the LLM.
+* **Model Tiering:** Tasks are routed to the most cost-effective model possible. Lightweight models handle initial triage, while premium reasoning models are reserved exclusively for the Quality Lead supervisor.
+
+**LLM Observability**
+* **Tracing:** Every LLM call, tool execution, and routing decision is traced via Langfuse.
+* **Metric Attribution:** Every trace captures token consumption, latency, and cost. Traces are tagged by user tier and session ID, so cost and latency can be attributed per user.
+
+---
 
 ## Screenshots
 
@@ -29,43 +61,12 @@ MindCX replaces the single all-purpose agent with a coordinated team of speciali
 **Agent Portal — Escalation queue with human takeover**
 ![Agent Portal](docs/screenshots/agent.png)
 
----
-
-## Core Infrastructure
-
-The hardest engineering challenges in MindCX aren't the LLM prompts—they are the underlying state management and orchestration mechanics:
-
-**Three-Tier Memory Architecture:**
-* **The Conversation (Short-Term)**
-Handles the "right now." It keeps the agents focused on the current conversation thread so they don't lose their place between messages.
-* **The Session (Mid-Term)**
-Handles the "today." If a user leaves and returns an hour later, the system uses a Redis-backed summary to pick up exactly where they left off without needing a full recap.
-* **The History (Long-Term)**
-Handles the "forever." Using Vector Search, the system remembers past issues and preferences from weeks or months ago. If a user says, "It’s happening again," the agents can recall exactly how it was fixed last time.
-
-**Self-Correcting Quality Loop:** 
-Every specialist response must pass a "Quality Lead" supervisor node before reaching the user. If the specialist hallucinates or diverges from the user's exact question, the Quality Lead issues a `RETRY` and the graph loops back. A hard cap of 2 retries prevents runaway token burn.
-
-**Taint-and-Suppress Context Isolation:**
-If an AI session fails and escalates to a human, we "taint" the cross-session state note with an `[ESCALATED]` prefix. On the user's next visit, the system detects this prefix and suppresses the context, preventing a degraded or confusing previous session from poisoning the new LLM context window.
-
-**Two-Layer Caching:**
-Tool calls (like pulling billing history) are cached in the `GraphState` (turn-local) and in Redis `SessionData` (cross-turn). By caching tool results both locally in the turn and globally in Redis, we prevent expensive redundant API calls and save the LLM from burning tokens regenerating the same data if a Retry loop is triggered.
-
-**Performance & Cost Optimization**
-* **Regex Fast-Pass:** Trivial inputs (greetings or acknowledgments) are intercepted by a lightweight heuristic. This bypasses the LLM entirely, saving a round-trip on approximately 40% of message exchanges.
-* **Token Budgeting:** Large tool payloads, such as extensive billing histories, pass through a budget filter. If a payload exceeds the threshold, it is automatically truncated to prevent context window bloat and runaway token costs.
-* **Model Tiering:** Tasks are routed to the most cost-effective model possible. Lightweight models handle initial triage, while premium reasoning models are reserved exclusively for the Quality Lead supervisor.
-
-**LLM Observability**
-* **Granular Tracing:** Every node in the graph is instrumented via Langfuse. We trace every LLM generation, tool execution, and routing decision in real-time.
-* **Metric Attribution:** Every trace captures token consumption, latency, and cost. Data is tagged by user tier and session ID to eliminate production blind spots and allow for precise cost-per-user analysis.
 
 ---
 
 ## The Architecture DAG
 
-The system backbone is compiled via `StateGraph` and executed as an async streaming pipeline. Every LLM invocation, tool call, and routing decision flows back to the React client as granular WebSocket events.
+The graph is compiled via StateGraph and runs as an async streaming pipeline. Every LLM invocation, tool call, and routing decision flows back to the React client as WebSocket events.
 
 ```
 User ──WebSocket──▶ Concierge ──intent──▶ Billing Specialist
@@ -108,7 +109,6 @@ frontend/                  # React + TypeScript (Vite MPA)
 │   │   ├── EscalationDashboard.tsx  # FIFO queue viewer, takeover controls, agent reply
 │   │   └── LogsView.tsx   # Session browser with routing trace + full transcript replay
 ```
-
 ---
 
 ## Stack
@@ -130,7 +130,7 @@ frontend/                  # React + TypeScript (Vite MPA)
 
 ```bash
 cp backend/config/.env.example backend/config/.env
-# Add your GEMINI_API_KEY (or OPENAI_API_KEY)
+# Add your LLM_API_KEY
 
 docker-compose up --build
 ```
@@ -138,7 +138,3 @@ docker-compose up --build
 **Access Points:**
 *   Customer chat: `http://localhost:5173`
 *   Agent portal:  `http://localhost:5173/agent.html`
-
-Test Accounts:
-*  `admin@mindcx.ai` / `mindcx2026` (agent)
-*  `jonny@startup.inc` / `mindcx2026` (customer)
