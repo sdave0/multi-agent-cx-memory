@@ -1,4 +1,4 @@
-from .runner import EvalRunner
+from .run import EvalRunner
 import asyncio
 
 if __name__ == "__main__":

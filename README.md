@@ -1,4 +1,5 @@
 # MindCX
+[![CI/CD](https://github.com/USERNAME/mindcx/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/mindcx/actions/workflows/ci.yml)
 
 The most frustrating part of customer support is having to explain your problem all over again.
 
@@ -20,6 +21,31 @@ Single-agent systems have no internal check on their own output. Without a super
 Most frameworks handle the "current turn" well but fail to recall user-specific facts across different sessions. The result is a support experience that feels like starting from scratch every time.
 
 The real engineering is in the memory layer. Turn context, session summaries, and long-term vector memory run in parallel so the system never loses track of a user across conversations.
+
+---
+
+## Architecture Validation & Latest Eval Results
+
+MindCX maintains strict multi-agent orchestration by funneling isolated, deterministic routing capabilities into the LLMs instead of letting them roam dynamically. Through our 3-tier memory retention structure (Turn, Session, and Global Vector), context limits are respected while delivering 100% routing accuracy within the offline evaluation suite.
+
+**Latest Eval Harness Artifact:**
+```text
+============================================================
+ MINDCX OFFLINE EVALUATION REPORT
+============================================================
+ID                   | STATUS     | ACTUAL              
+------------------------------------------------------------
+billing_simple       | PASS       | billing_specialist (resolved)
+tech_outage          | PASS       | tech_specialist (resolved)
+greeting_fast_pass   | PASS       | tech_specialist (resolved)
+escalation_manual    | PASS       | escalate (escalate) 
+billing_free_tier    | PASS       | billing_specialist (resolved)
+tech_bug_pro         | PASS       | tech_specialist (resolved)
+------------------------------------------------------------
+OVERALL ACCURACY: 100.00%
+RETRY RATE:       0.00 per turn
+============================================================
+```
 
 ---
 

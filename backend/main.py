@@ -17,13 +17,14 @@ logger = get_logger("agent.main")
 load_dotenv(os.path.join(os.path.dirname(__file__), 'config', '.env'))
 
 # --- Startup Security Checks ---
-ENV = os.environ.get("ENV", "production")
-if ENV != "development":
-    REQUIRED_ENV = ["JWT_SECRET_KEY", "API_KEY", "REDIS_URL"]
-    missing = [env for env in REQUIRED_ENV if not os.environ.get(env)]
-    if missing:
-        logger.critical(f"CRITICAL: Missing required environment variables for {ENV} mode: {missing}")
-        raise RuntimeError(f"Missing environment variables: {missing}")
+REQUIRED_ENV = ["JWT_SECRET_KEY", "API_KEY", "REDIS_URL"]
+missing = [env for env in REQUIRED_ENV if not os.environ.get(env)]
+if missing:
+    logger.critical(f"CRITICAL: Missing required environment variables: {missing}")
+    raise RuntimeError(f"Missing environment variables: {missing}")
+
+if not os.environ.get("GEMINI_API_KEY") and not os.environ.get("GOOGLE_API_KEY") and not os.environ.get("LLM_API_KEY"):
+    raise RuntimeError("An LLM_API_KEY (or GEMINI/GOOGLE_API_KEY) must be explicitly present in the environment.")
 
 # --- Auth Models & Dependencies ---
 class LoginRequest(BaseModel):
@@ -52,9 +53,7 @@ async def get_admin_user(current_user: Account = Depends(get_current_user)):
 
 # Legacy API Key Security
 API_KEY = os.environ.get("API_KEY")
-if not API_KEY and ENV == "development":
-    API_KEY = "dev_api_key_only"
-elif not API_KEY:
+if not API_KEY:
     raise RuntimeError("API_KEY is not set!")
 
 API_KEY_NAME = "X-API-Key"
@@ -72,14 +71,20 @@ try:
 except Exception as e:
     logger.error(f"Seed DB non-fatal issue: {e}", exc_info=True)
 
-if not os.environ.get("GOOGLE_API_KEY") and os.environ.get("GEMINI_API_KEY"):
-    os.environ["GOOGLE_API_KEY"] = os.environ.get("GEMINI_API_KEY")
+if not os.environ.get("GOOGLE_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.environ.get("GEMINI_API_KEY") or os.environ.get("LLM_API_KEY", "")
 
 app = FastAPI(title="Nexus Support Agent API")
 
+allowed_origins_str = os.environ.get("ALLOWED_ORIGINS")
+if allowed_origins_str:
+    cors_origins = [o.strip() for o in allowed_origins_str.split(",")]
+else:
+    cors_origins = ["http://localhost:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

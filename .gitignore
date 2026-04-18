@@ -35,3 +35,10 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Evaluation Run Outputs
+backend/evals/results/*.json
+backend/evals/results/*.md
+
+# Testing Caches
+.pytest_cache/

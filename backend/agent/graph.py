@@ -26,10 +26,32 @@ from backend.logger import get_logger
 logger = get_logger("agent.graph")
 loop_guard = LoopGuard(max_retries=2)
 context_manager = ContextManager()
-memory_manager = MemoryManager()
-llm_factory = LLMClientFactory()
-call_delay = llm_factory.get_call_delay()
-token_filter = TokenBudgetFilter()
+
+# Lazy-loaded dependencies
+_memory_manager = None
+_llm_factory = None
+_token_filter = None
+
+def get_memory_manager():
+    global _memory_manager
+    if _memory_manager is None:
+        _memory_manager = MemoryManager()
+    return _memory_manager
+
+def get_llm_factory():
+    global _llm_factory
+    if _llm_factory is None:
+        _llm_factory = LLMClientFactory()
+    return _llm_factory
+
+def get_token_filter():
+    global _token_filter
+    if _token_filter is None:
+        _token_filter = TokenBudgetFilter()
+    return _token_filter
+
+def get_call_delay():
+    return get_llm_factory().get_call_delay()
 
 def get_tool_result(state: GraphState, tool_name: str, params: Dict[str, Any]) -> str:
     """Helper to execute tools with caching in GraphState and persistence in session history."""
@@ -62,7 +84,7 @@ def get_tool_result(state: GraphState, tool_name: str, params: Dict[str, Any]) -
 
     try:
         raw_data = tool.execute(params).data
-        result = token_filter.filter(tool_name, raw_data)
+        result = get_token_filter().filter(tool_name, raw_data)
         
         # Cache for current turn
         state['tool_results'][tool_name] = result
@@ -119,7 +141,7 @@ def concierge_node(state: GraphState, config: RunnableConfig = None):
 
     # 1. Semantic Memory Search
     # Fetch relevant facts from previous sessions using embeddings
-    memories = memory_manager.search_memories(user_id, user_input)
+    memories = get_memory_manager().search_memories(user_id, user_input)
     if memories:
         # Avoid duplicates if we already fetched them this session
         new_mems = [m for m in memories if m not in state['session'].relevant_memories]
@@ -152,7 +174,7 @@ def concierge_node(state: GraphState, config: RunnableConfig = None):
         return state
 
     # 3. LLM for intent, entity extraction, and memory formation
-    llm = llm_factory.get_client("concierge")
+    llm = get_llm_factory().get_client("concierge")
 
     formatted_context = context_manager.format_for_specialist(state['session'])
     base_prompt = load_prompt("concierge")
@@ -225,7 +247,7 @@ def concierge_node(state: GraphState, config: RunnableConfig = None):
         new_mems = data.get("extracted_memories", [])
         for mem in new_mems:
             if mem not in state['session'].relevant_memories:
-                memory_manager.add_memory(user_id, mem)
+                get_memory_manager().add_memory(user_id, mem)
                 state['session'].relevant_memories.append(mem)
 
     except Exception as e:
@@ -249,7 +271,7 @@ def concierge_node(state: GraphState, config: RunnableConfig = None):
 
 def billing_node(state: GraphState, config: RunnableConfig = None):
     logger.info("Executing billing_node")
-    llm = llm_factory.get_client("billing_specialist")
+    llm = get_llm_factory().get_client("billing_specialist")
     
     # Initialize turn-cache if missing
     if 'tool_results' not in state: state['tool_results'] = {}
@@ -287,9 +309,9 @@ def billing_node(state: GraphState, config: RunnableConfig = None):
     base_prompt = load_prompt("billing_specialist")
     prompt = f"Chat History & State:\n{chat_context}\n\nTool Context: {tool_context}\n\nUser says: {state['current_input']}. Respond helpfully and succinctly about billing."
     res = llm.invoke([SystemMessage(content=base_prompt), HumanMessage(content=prompt)], config=config)
-    if call_delay > 0:
-        logger.info(f"Delaying for {call_delay} seconds after billing specialist LLM call.")
-        time.sleep(call_delay)
+    if get_call_delay() > 0:
+        logger.info(f"Delaying for {get_call_delay()} seconds after billing specialist LLM call.")
+        time.sleep(get_call_delay())
     
     # Handle list-type content safely
     final_text = res.content if isinstance(res.content, str) else str(res.content)
@@ -305,7 +327,7 @@ def billing_node(state: GraphState, config: RunnableConfig = None):
 
 def tech_node(state: GraphState, config: RunnableConfig = None):
     logger.info("Executing tech_node")
-    llm = llm_factory.get_client("tech_specialist")
+    llm = get_llm_factory().get_client("tech_specialist")
     user_input_lower = state['current_input'].lower()
     
     # Initialize turn-cache if missing
@@ -343,9 +365,9 @@ def tech_node(state: GraphState, config: RunnableConfig = None):
     base_prompt = load_prompt("tech_specialist")
     prompt = f"Chat History & State:\n{chat_context}\n\nTool Context: {tool_context}\n\nUser says: {state['current_input']}. Respond helpfully and succinctly about tech support."
     res = llm.invoke([SystemMessage(content=base_prompt), HumanMessage(content=prompt)], config=config)
-    if call_delay > 0:
-        logger.info(f"Delaying for {call_delay} seconds after tech specialist LLM call.")
-        time.sleep(call_delay)
+    if get_call_delay() > 0:
+        logger.info(f"Delaying for {get_call_delay()} seconds after tech specialist LLM call.")
+        time.sleep(get_call_delay())
     
     # Handle list-type content safely
     final_text = res.content if isinstance(res.content, str) else str(res.content)
@@ -407,7 +429,7 @@ def quality_node(state: GraphState, config: RunnableConfig = None):
         return state
 
     # ── Full LLM quality evaluation ───────────────────────────────────────────
-    llm = llm_factory.get_client("quality_lead")
+    llm = get_llm_factory().get_client("quality_lead")
     # Load system prompt from the authoritative external file so prompt changes
     # don't require a code deployment.
     system_prompt = load_prompt("quality_lead")
@@ -424,9 +446,9 @@ def quality_node(state: GraphState, config: RunnableConfig = None):
         [SystemMessage(content=system_prompt), HumanMessage(content=evaluation_prompt)],
         config=config
     )
-    if call_delay > 0:
-        logger.info(f"Delaying {call_delay}s after quality_lead LLM call.")
-        time.sleep(call_delay)
+    if get_call_delay() > 0:
+        logger.info(f"Delaying {get_call_delay()}s after quality_lead LLM call.")
+        time.sleep(get_call_delay())
 
     res_text = res.content if isinstance(res.content, str) else str(res.content)
     # Parse only the first line so that extra reasoning lines don't accidentally
