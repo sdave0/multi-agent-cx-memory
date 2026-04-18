@@ -65,29 +65,35 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
     else:
         raise HTTPException(status_code=403, detail="Could not validate API Key")
 
-try:
-    seed_db()
-    logger.info("Database seeded successfully.")
-except Exception as e:
-    logger.error(f"Seed DB non-fatal issue: {e}", exc_info=True)
+# --- Database & Seeding ---
+if os.environ.get("SEED_DB", "false").lower() == "true":
+    try:
+        seed_db()
+        logger.info("Database seeded via SEED_DB=true.")
+    except Exception as e:
+        logger.error(f"Seed DB non-fatal issue: {e}", exc_info=True)
+else:
+    logger.info("Skipping database seed (SEED_DB != true).")
 
 if not os.environ.get("GOOGLE_API_KEY"):
     os.environ["GOOGLE_API_KEY"] = os.environ.get("GEMINI_API_KEY") or os.environ.get("LLM_API_KEY", "")
 
 app = FastAPI(title="Nexus Support Agent API")
 
+# --- Runtime Hardening: CORS ---
 allowed_origins_str = os.environ.get("ALLOWED_ORIGINS")
 if allowed_origins_str:
     cors_origins = [o.strip() for o in allowed_origins_str.split(",")]
 else:
+    # Strict default for production; local dev can override via .env
     cors_origins = ["http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
 
 @app.post("/api/auth/login")
