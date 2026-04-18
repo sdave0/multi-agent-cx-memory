@@ -36,9 +36,14 @@ Thumbs.db
 *.swp
 *.swo
 
-# Evaluation Run Outputs
-backend/evals/results/*.json
-backend/evals/results/*.md
+# Quality Assurance Outputs
+!evals/results/.gitkeep
+
+benchmarks/results/*
+!benchmarks/results/.gitkeep
+
+tests/results/*
+!tests/results/.gitkeep
 
 # Testing Caches
 .pytest_cache/

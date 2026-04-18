@@ -1,36 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Search, ChevronRight, Activity, ShieldAlert, CheckCircle } from 'lucide-react';
+import { APIClient, SessionDetail, TraceDecision, ChatMessage } from '../api/client';
 
 export default function LogsView() {
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<SessionDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [selectedSession, setSelectedSession] = useState<any>(null);
-
-  const getHeaders = () => {
-    const token = localStorage.getItem('mindcx_token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  };
+  const [selectedSession, setSelectedSession] = useState<SessionDetail | null>(null);
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/escalation/sessions', {
-          headers: getHeaders()
-        });
-        if (response.status === 401 || response.status === 403) {
-            setError("Session expired or unauthorized. Please re-login.");
-            return;
-        }
-        if (!response.ok) throw new Error("Failed to fetch sessions");
-        const data = await response.json();
+        const data = await APIClient.getSessions();
         setSessions(data.sessions || []);
-      } catch (e) {
-        setError(String(e));
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+            setError(e.message);
+        } else {
+            setError(String(e));
+        }
       } finally {
         setLoading(false);
       }
@@ -45,13 +34,8 @@ export default function LogsView() {
 
   const fetchDetail = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/escalation/session/${id}`, {
-        headers: getHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedSession(data);
-      }
+      const data = await APIClient.getSessionDetail(id);
+      setSelectedSession(data);
     } catch (e) {
       console.error(e);
     }
@@ -179,7 +163,7 @@ export default function LogsView() {
                 <div>
                   <div className="label" style={{ marginBottom: '1rem' }}>Routing Trace</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {selectedSession.routing_decisions.map((d: any, i: number) => (
+                    {selectedSession.routing_decisions.map((d: TraceDecision, i: number) => (
                       <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.85rem', padding: '0.75rem', backgroundColor: 'var(--surface-low)', borderRadius: 'var(--radius-sm)' }}>
                         <div style={{ fontWeight: 600, color: 'var(--primary)' }}>{d.intent.toUpperCase()}</div>
                         <div style={{ color: 'var(--on-surface-variant)' }}>→</div>
@@ -194,7 +178,7 @@ export default function LogsView() {
                 <div>
                   <div className="label" style={{ marginBottom: '1rem' }}>Full Transcript</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {selectedSession.message_history.map((m: any, i: number) => (
+                    {selectedSession.message_history.map((m: ChatMessage, i: number) => (
                       <div key={i} style={{ 
                         padding: '1rem', 
                         borderRadius: 'var(--radius-md)', 

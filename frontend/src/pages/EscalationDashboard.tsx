@@ -1,34 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Activity, Users, Send } from 'lucide-react';
+import { APIClient, SessionQueueItem } from '../api/client';
 
 export default function EscalationDashboard() {
-  const [queue, setQueue] = useState<any[]>([]);
-  const [activeItem, setActiveItem] = useState<any>(null);
+  const [queue, setQueue] = useState<SessionQueueItem[]>([]);
+  const [activeItem, setActiveItem] = useState<SessionQueueItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('mindcx_token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  };
-
   useEffect(() => {
     const fetchQueue = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/escalation/queue', {
-          headers: getHeaders()
-        });
-        if (response.status === 401 || response.status === 403) {
-            setError("Session expired or unauthorized. Please re-login.");
-            return;
-        }
-        if (!response.ok) throw new Error("Failed to fetch queue");
-        const data = await response.json();
+        const data = await APIClient.getQueue();
         setQueue(data.queue || []);
         
         // Auto-select first item if none active
@@ -36,8 +21,12 @@ export default function EscalationDashboard() {
            setActiveItem(data.queue[0]);
         }
         setError(null);
-      } catch (e) {
-        setError(String(e));
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+            setError(e.message);
+        } else {
+            setError(String(e));
+        }
       } finally {
         setLoading(false);
       }
@@ -51,17 +40,9 @@ export default function EscalationDashboard() {
   const handleTakeover = async () => {
     if (!activeItem) return;
     try {
-      const response = await fetch('http://localhost:8000/api/escalation/takeover', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ session_id: activeItem.session_id, agent_id: 'human_agent_1' })
-      });
-      if (response.ok) {
-        setQueue(queue.filter(item => item.session_id !== activeItem.session_id));
-        setActiveItem({ ...activeItem, takenOver: true });
-      } else {
-        console.error("Takeover failed");
-      }
+      await APIClient.takeoverSession(activeItem.session_id, 'human_agent_1');
+      setQueue(queue.filter(item => item.session_id !== activeItem.session_id));
+      setActiveItem({ ...activeItem, takenOver: true });
     } catch (e) {
       console.error(e);
     }
@@ -73,16 +54,8 @@ export default function EscalationDashboard() {
 
     setSending(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/escalation/agent-message/${activeItem.session_id}`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ text: message, agent_id: 'human_agent_1' })
-      });
-      if (response.ok) {
-        setMessage('');
-      } else {
-        console.error("Failed to send message");
-      }
+      await APIClient.sendAgentMessage(activeItem.session_id, message, 'human_agent_1');
+      setMessage('');
     } catch (e) {
       console.error(e);
     } finally {
@@ -207,7 +180,7 @@ export default function EscalationDashboard() {
                        onChange={(e) => setMessage(e.target.value)}
                        placeholder={activeItem.takenOver ? "Type your reply to the customer..." : "Click 'Take Over' to start assisting..."} 
                        disabled={!activeItem.takenOver || sending}
-                       style={{ flex: 1, backgroundColor: 'transparent', border: 'none', outline: 'none', padding: '0.75rem 1rem', fontSize: '1rem', color: 'var(--on-surface' }}
+                       style={{ flex: 1, backgroundColor: 'transparent', border: 'none', outline: 'none', padding: '0.75rem 1rem', fontSize: '1rem', color: 'var(--on-surface)' }}
                      />
                      <button 
                         type="submit"

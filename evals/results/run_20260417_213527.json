@@ -1,0 +1,168 @@
+{
+  "timestamp": "2026-04-17T21:35:27.726321",
+  "metrics": {
+    "route_accuracy": 1.0,
+    "retry_rate": 0.0,
+    "escalation_precision": 0.0,
+    "tool_error_handling": 0.0,
+    "total_passed": 6
+  },
+  "results": [
+    {
+      "id": "billing_simple",
+      "name": "Simple Billing Inquiry",
+      "passed": true,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "billing_inquiry",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "lookup_account",
+          "get_billing_history"
+        ]
+      },
+      "expected": {
+        "specialist": "billing_specialist",
+        "intent": "billing_inquiry",
+        "outcome": "resolved",
+        "required_steps": [
+          "lookup_account",
+          "get_billing_history"
+        ],
+        "forbidden_tools": [
+          "check_outage_status",
+          "create_ticket"
+        ]
+      }
+    },
+    {
+      "id": "tech_outage",
+      "name": "Tech Outage Inquiry",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "support",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "check_outage_status"
+        ]
+      },
+      "expected": {
+        "specialist": "tech_specialist",
+        "intent": "support",
+        "outcome": "resolved",
+        "required_steps": [
+          "check_outage_status"
+        ],
+        "forbidden_tools": [
+          "lookup_account",
+          "get_billing_history",
+          "create_ticket"
+        ]
+      }
+    },
+    {
+      "id": "greeting_fast_pass",
+      "name": "Greeting Fast Pass",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "greeting",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": []
+      },
+      "expected": {
+        "specialist": "tech_specialist",
+        "intent": "greeting",
+        "outcome": "resolved",
+        "required_steps": [],
+        "forbidden_tools": [
+          "check_outage_status",
+          "create_ticket",
+          "lookup_account",
+          "get_billing_history"
+        ]
+      }
+    },
+    {
+      "id": "escalation_manual",
+      "name": "Manual Escalation Request",
+      "passed": true,
+      "actual": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate",
+        "retries": 0,
+        "tools": []
+      },
+      "expected": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate",
+        "required_steps": [],
+        "forbidden_tools": [
+          "check_outage_status",
+          "create_ticket",
+          "lookup_account",
+          "get_billing_history"
+        ]
+      }
+    },
+    {
+      "id": "billing_free_tier",
+      "name": "Billing History - Free Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "general",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "lookup_account"
+        ]
+      },
+      "expected": {
+        "specialist": "billing_specialist",
+        "outcome": "resolved",
+        "required_steps": [
+          "lookup_account"
+        ],
+        "forbidden_tools": [
+          "get_billing_history",
+          "check_outage_status",
+          "create_ticket"
+        ]
+      }
+    },
+    {
+      "id": "tech_bug_pro",
+      "name": "Bug Report - Pro Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "general",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "check_outage_status",
+          "create_ticket"
+        ]
+      },
+      "expected": {
+        "specialist": "tech_specialist",
+        "outcome": "resolved",
+        "required_steps": [
+          "check_outage_status",
+          "create_ticket"
+        ],
+        "forbidden_tools": [
+          "lookup_account",
+          "get_billing_history"
+        ]
+      }
+    }
+  ]
+}

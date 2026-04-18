@@ -1,4 +1,4 @@
-name: MindCX Backend CI
+name: MindCX CI
 
 on:
   push:
@@ -9,6 +9,9 @@ on:
 jobs:
   test-and-eval:
     runs-on: ubuntu-latest
+    env:
+      EVAL_MODE: mock
+      PYTHONPATH: .
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,13 +27,13 @@ jobs:
           pip install -r requirements.txt pytest pytest-asyncio pytest-mock
 
       - name: Run pytest
-        run: PYTHONPATH=. pytest backend/tests/
+        run: pytest tests/
 
       - name: Run evaluation harness
-        run: python -m backend.evals.run
+        run: python -m evals.run
 
       - name: Generate Evaluation Dashboard
-        run: python backend/evals/generate_report.py
+        run: python evals/generate_report.py
         if: always()
 
       - name: Upload Evaluation Report
@@ -38,4 +41,23 @@ jobs:
         if: always()
         with:
           name: eval-report
-          path: backend/evals/results/eval_dashboard.md
+          path: evals/results/eval_dashboard.md
+
+  frontend-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run Frontend Typecheck
+        working-directory: ./frontend
+        run: npm run typecheck

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 
+import { User } from '../api/client';
+
 interface LoginProps {
-  onLoginSuccess: (user: any) => void;
+  onLoginSuccess: (user: User) => void;
   isAgentPortal?: boolean;
 }
 
@@ -39,8 +41,8 @@ export default function Login({ onLoginSuccess, isAgentPortal = false }: LoginPr
       localStorage.setItem('mindcx_token', data.access_token);
       localStorage.setItem('mindcx_user', JSON.stringify(data.user));
       onLoginSuccess(data.user);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }

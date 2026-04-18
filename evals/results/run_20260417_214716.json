@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-04-17T21:47:16.724908",
+  "metrics": {
+    "route_accuracy": 1.0,
+    "retry_rate": 0.0,
+    "escalation_precision": 0.0,
+    "tool_error_handling": 0.0,
+    "total_passed": 2
+  },
+  "results": [
+    {
+      "id": "escalation_manual",
+      "name": "Manual Escalation Request",
+      "passed": true,
+      "actual": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate",
+        "retries": 0,
+        "tools": []
+      },
+      "expected_route": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate"
+      }
+    },
+    {
+      "id": "billing_free_tier",
+      "name": "Billing History - Free Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "general",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "lookup_account"
+        ]
+      },
+      "expected_route": {
+        "specialist": "billing_specialist",
+        "outcome": "resolved"
+      }
+    }
+  ]
+}

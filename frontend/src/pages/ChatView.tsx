@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Cpu, Link, AlertTriangle, Download } from 'lucide-react';
 import { SidebarContext } from '../components/Sidebar';
+import { ChatMessage } from '../api/client';
 
 interface ChatViewProps {
   onContextUpdate?: (context: SidebarContext) => void;
 }
 
 export default function ChatView({ onContextUpdate }: ChatViewProps) {
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-04-17T21:55:48.239829",
+  "metrics": {
+    "route_accuracy": 1.0,
+    "retry_rate": 0.0,
+    "escalation_precision": 0.0,
+    "tool_error_handling": 0.0,
+    "total_passed": 6
+  },
+  "results": [
+    {
+      "id": "billing_simple",
+      "name": "Simple Billing Inquiry",
+      "passed": true,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "billing_inquiry",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "lookup_account",
+          "get_billing_history"
+        ]
+      },
+      "expected_route": {
+        "specialist": "billing_specialist",
+        "intent": "billing_inquiry",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "tech_outage",
+      "name": "Tech Outage Inquiry",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "support",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "check_outage_status"
+        ]
+      },
+      "expected_route": {
+        "specialist": "tech_specialist",
+        "intent": "support",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "greeting_fast_pass",
+      "name": "Greeting Fast Pass",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "greeting",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": []
+      },
+      "expected_route": {
+        "specialist": "tech_specialist",
+        "intent": "greeting",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "escalation_manual",
+      "name": "Manual Escalation Request",
+      "passed": true,
+      "actual": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate",
+        "retries": 0,
+        "tools": []
+      },
+      "expected_route": {
+        "specialist": "escalate",
+        "intent": "human_escalation",
+        "outcome": "escalate"
+      }
+    },
+    {
+      "id": "billing_free_tier",
+      "name": "Billing History - Free Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "billing_specialist",
+        "intent": "general",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "lookup_account"
+        ]
+      },
+      "expected_route": {
+        "specialist": "billing_specialist",
+        "outcome": "resolved"
+      }
+    },
+    {
+      "id": "tech_bug_pro",
+      "name": "Bug Report - Pro Tier",
+      "passed": true,
+      "actual": {
+        "specialist": "tech_specialist",
+        "intent": "general",
+        "outcome": "resolved",
+        "retries": 0,
+        "tools": [
+          "check_outage_status",
+          "create_ticket"
+        ]
+      },
+      "expected_route": {
+        "specialist": "tech_specialist",
+        "outcome": "resolved"
+      }
+    }
+  ]
+}

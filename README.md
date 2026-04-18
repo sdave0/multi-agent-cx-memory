@@ -8,18 +8,16 @@ MindCX is a multi-agent support system that actually remembers its users. It use
 
 ## The Problem It Solves
 
-Most support systems struggle to survive real-world production. Three problems come up repeatedly:
-
 * **Context Rot:** 
 Without tiered memory, agents either forget past conversations or stuff the context window with irrelevant history, which degrades response quality and forces users to re-explain themselves on every return visit.
 
 * **Unchecked Autonomy:** 
-Single-agent systems have no internal check on their own output. Without a supervisor, an agent can confidently execute the wrong fix or trigger billing actions it shouldn't.
+A single agent has no internal check on its own output. Without a supervisor, an agent can confidently execute the wrong fix or trigger billing actions it shouldn't.
 
 * **The Persistence Gap:** 
 Most frameworks handle the "current turn" well but fail to recall user-specific facts across different sessions. The result is a support experience that feels like starting from scratch every time.
 
-The real engineering is in the memory layer. Turn context, session summaries, and long-term vector memory run in parallel so the system never loses track of a user across conversations.
+Turn context, session summaries, and long-term vector memory run in parallel so the system never loses track of a user across conversations.
 
 ---
 
@@ -43,7 +41,7 @@ If an AI session fails and escalates to a human, we "taint" the cross-session st
 During a retry loop, tool calls would otherwise re-execute and burn tokens on data already fetched. Caching results in both GraphState (turn-local) and Redis SessionData (cross-turn) prevents that.
 
 
-**Engineering Rigor & Evaluation**: Every commit is verified against a Golden Dataset of named test cases covering happy paths, edge cases, and adversarial inputs.
+**Evaluation**: Every commit is verified against a Golden Dataset of named test cases covering happy paths, edge cases, and adversarial inputs.
 
 * **Trajectory Assertions:** The eval harness verifies not just the final outcome but the exact sequence of tools the agent called -- catching routing regressions that a simple pass/fail check would miss.
 * **Side-Effect Verification:** Tool calls are asserted at the argument level. A billing lookup for the wrong account ID fails the eval, even if the response text looks correct.
@@ -72,9 +70,19 @@ During a retry loop, tool calls would otherwise re-execute and burn tokens on da
 
 ---
 
-## The Architecture DAG
+## Benchmarks
 
-The graph is compiled via StateGraph and runs as an async streaming pipeline. Every LLM invocation, tool call, and routing decision flows back to the React client as WebSocket events.
+Live execution across 12 runs: P50 latency 5.18s, TTFT P50 1.52s, total cost $0.00247 per session. 
+Wasted spend was $0.00023 — 9.3% of total, absorbed by the retry cap before it compounds.
+
+The Security Probe case is the known outlier. Adversarial inputs trigger a full context rebuild 
+and re-route through the Quality Lead, which pushes P95 latency to 23.4s. Every other case 
+stays well under 10s. That cost is intentional — early rejection before the specialist layer 
+is the next optimization target.
+
+![LLM Agent Telemetry — Latency Distribution](docs/screenshots/benchmark_telemetry.png)
+
+## The Architecture DAG
 
 ```
 User ──WebSocket──▶ Concierge ──intent──▶ Billing Specialist
@@ -92,6 +100,14 @@ User ──WebSocket──▶ Concierge ──intent──▶ Billing Specialist
 ## Project Structure
 
 ```
+tests/                     # Deterministic Pytest suite (CI/CD regression)
+evals/                     # LangChain-based LLMOps evaluation harness
+├── golden_dataset.json    # Adversarial & happy-path test cases
+├── run.py                 # Live vs. Mock execution runner
+└── generate_report.py     # Cost & success rate ASCII/Markdown dashboard
+benchmarks/                # Real-world performance telemetry wrapper
+└── benchmark_replay.py    # Latency & Token-Cost analysis via astream_events
+
 backend/
 ├── agent/
 │   ├── graph.py          # LangGraph DAG: concierge → specialists → quality lead
@@ -137,7 +153,7 @@ frontend/                  # React + TypeScript (Vite MPA)
 ## Running It
 
 ```bash
-cp backend/config/.env.example backend/config/.env
+cp .env.example .env
 # Add your LLM_API_KEY
 
 docker-compose up --build

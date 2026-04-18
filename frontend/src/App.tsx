@@ -4,9 +4,10 @@ import Sidebar from './components/Sidebar';
 import ChatView from './pages/ChatView';
 import Login from './pages/Login';
 import { SidebarContext } from './components/Sidebar';
+import { User } from './api/client';
 
 function App() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [sidebarContext, setSidebarContext] = useState<SidebarContext>({
     tier: 'PRO'
   });

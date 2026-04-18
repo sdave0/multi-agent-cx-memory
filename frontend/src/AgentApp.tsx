@@ -6,9 +6,10 @@ import EscalationDashboard from './pages/EscalationDashboard';
 import LogsView from './pages/LogsView';
 import Login from './pages/Login';
 import { SidebarContext } from './components/Sidebar';
+import { User } from './api/client';
 
 function AgentApp() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarContext, setSidebarContext] = useState<SidebarContext>({
     tier: 'PRO'
