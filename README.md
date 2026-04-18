@@ -1,5 +1,4 @@
 # MindCX
-[![CI/CD](https://github.com/USERNAME/mindcx/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/mindcx/actions/workflows/ci.yml)
 
 The most frustrating part of customer support is having to explain your problem all over again.
 
@@ -24,31 +23,6 @@ The real engineering is in the memory layer. Turn context, session summaries, an
 
 ---
 
-## Architecture Validation & Latest Eval Results
-
-MindCX maintains strict multi-agent orchestration by funneling isolated, deterministic routing capabilities into the LLMs instead of letting them roam dynamically. Through our 3-tier memory retention structure (Turn, Session, and Global Vector), context limits are respected while delivering 100% routing accuracy within the offline evaluation suite.
-
-**Latest Eval Harness Artifact:**
-```text
-============================================================
- MINDCX OFFLINE EVALUATION REPORT
-============================================================
-ID                   | STATUS     | ACTUAL              
-------------------------------------------------------------
-billing_simple       | PASS       | billing_specialist (resolved)
-tech_outage          | PASS       | tech_specialist (resolved)
-greeting_fast_pass   | PASS       | tech_specialist (resolved)
-escalation_manual    | PASS       | escalate (escalate) 
-billing_free_tier    | PASS       | billing_specialist (resolved)
-tech_bug_pro         | PASS       | tech_specialist (resolved)
-------------------------------------------------------------
-OVERALL ACCURACY: 100.00%
-RETRY RATE:       0.00 per turn
-============================================================
-```
-
----
-
 ## How It Works
 
 **Three-Tier Memory Architecture:**
@@ -67,6 +41,14 @@ If an AI session fails and escalates to a human, we "taint" the cross-session st
 
 **Two-Layer Caching:**
 During a retry loop, tool calls would otherwise re-execute and burn tokens on data already fetched. Caching results in both GraphState (turn-local) and Redis SessionData (cross-turn) prevents that.
+
+
+**Engineering Rigor & Evaluation**: Every commit is verified against a Golden Dataset of named test cases covering happy paths, edge cases, and adversarial inputs.
+
+* **Trajectory Assertions:** The eval harness verifies not just the final outcome but the exact sequence of tools the agent called -- catching routing regressions that a simple pass/fail check would miss.
+* **Side-Effect Verification:** Tool calls are asserted at the argument level. A billing lookup for the wrong account ID fails the eval, even if the response text looks correct.
+* **Adversarial Coverage:** The dataset includes prompt injection attempts, tier-boundary violations (Free users requesting Pro features), cross-user data probes, and escalation hijack attempts.
+* **Hybrid Eval Modes:** `EVAL_MODE=mock` runs the full suite offline with zero token cost for CI/CD regression. `EVAL_MODE=live` runs against real LLM calls with Langfuse cost attribution per trace.
 
 **Performance & Cost Optimization**
 * **Regex Fast-Pass:** Simple inputs like greetings are caught by a regex check before hitting the LLM. This bypasses the LLM entirely, saving a round-trip on approximately 40% of message exchanges.

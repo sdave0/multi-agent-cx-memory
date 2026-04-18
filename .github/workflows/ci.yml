@@ -1,4 +1,4 @@
-name: Nexus Backend CI
+name: MindCX Backend CI
 
 on:
   push:
